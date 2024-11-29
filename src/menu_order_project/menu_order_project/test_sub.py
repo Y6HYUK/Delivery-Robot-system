@@ -533,45 +533,77 @@ class KitchenMonitoring(QMainWindow):
             quantity = int(self.order_table.item(row, 3).text())
             price = int(self.order_table.item(row, 4).text())
 
-            # 기존에 동일한 메뉴가 있는지 확인
-            menu_found = False
+            # 주문 객체 생성
+            order = {
+                'order_number': order_number,
+                'item': menu,
+                'quantity': quantity,
+                'price': price,
+                'checked': False,    # 체크 여부 : 체크박스 관련 비활성화
+                'disabled': False    # 비활성화 여부 : 체크박스 관련 비활성화
+            }
+
+            # 기존에 동일한 메뉴와 주문 번호가 있는지 확인
+            order_found = False
             for existing_order in self.table_data[table_id]:
-                if existing_order['item'] == menu:
+                if existing_order['item'] == menu and existing_order['order_number'] == order_number:
                     # 수량과 가격을 업데이트
                     existing_order['quantity'] += quantity
                     existing_order['price'] += price
-                    menu_found = True
+                    order_found = True
                     break
 
-            if not menu_found:
-                # 새로운 메뉴 추가 (order_number 포함)
-                self.table_data[table_id].append({
-                    'order_number': order_number,
-                    'item': menu,
-                    'quantity': quantity,
-                    'price': price,
-                    'checked': False,
-                    'disabled': False
-                })
+            if not order_found:
+                # 새로운 주문 추가
+                self.table_data[table_id].append(order)
 
-        # 버튼 텍스트 업데이트
         if 1 <= table_id <= len(self.table_buttons):
             button = self.table_buttons[table_id - 1]
+            # 임시로 메뉴별로 수량과 가격을 누적하는 딕셔너리 생성
+            accumulated_orders = {}
+            for order in self.table_data[table_id]:
+                item = order['item']
+                if item in accumulated_orders:
+                    accumulated_orders[item]['quantity'] += order['quantity']
+                    accumulated_orders[item]['price'] += order['price']
+                else:
+                    accumulated_orders[item] = {
+                        'quantity': order['quantity'],
+                        'price': order['price']
+                    }
+            # 버튼 텍스트 업데이트
             button.setText(
                 f"Table {table_id}\n" +
                 "\n".join([
-                    f"{order['item']} {order['quantity']}개 {order['price']}원"
-                    for order in self.table_data[table_id]
+                    f"{item} {data['quantity']}개 {data['price']}원"
+                    for item, data in accumulated_orders.items()
                 ])
             )
+
 
         # 주문 상세 정보 테이블 초기화
         self.order_table.setRowCount(0)
 
-        # 데이터베이스에 주문 저장
-        db.insert_order_with_items(table_id, self.table_data[table_id])
+        # 대기 주문 정보에서 다음 주문을 가져와 주문 상세 정보에 표시
+        if self.cumulative_table.rowCount() > 0:
+            first_order_number = self.cumulative_table.item(0, 0).text()
 
-        # 대기 주문 처리 (생략된 부분은 기존 코드 유지)
+            rows_to_move = []
+            for row in range(self.cumulative_table.rowCount()):
+                if self.cumulative_table.item(row, 0).text() == first_order_number:
+                    rows_to_move.append(row)
+
+            for row in rows_to_move:
+                row_count = self.order_table.rowCount()
+                self.order_table.insertRow(row_count)
+                for col in range(self.cumulative_table.columnCount()):
+                    item = self.cumulative_table.item(row, col)
+                    if item:
+                        self.order_table.setItem(row_count, col, QTableWidgetItem(item.text()))
+
+            # 대기 주문 정보에서 해당 행 삭제
+            for row in reversed(rows_to_move):
+                self.cumulative_table.removeRow(row)
 
         # 총 가격 업데이트
         self.update_total_price()
@@ -580,6 +612,9 @@ class KitchenMonitoring(QMainWindow):
         # 주문 결과를 서비스로 전송
         response_message = f"Order Accepted for Table {table_id}"
         self.send_order_result(response_message)
+
+        # 데이터베이스에 주문 저장
+        db.insert_order_with_items(table_id, self.table_data[table_id])
 
     def handle_cancel(self):
         """'Cancel' 버튼 클릭 시 현재 주문을 취소하고 화면을 업데이트"""
@@ -591,15 +626,6 @@ class KitchenMonitoring(QMainWindow):
 
         # "Specific order information"에서 주문 정보를 삭제
         self.order_table.setRowCount(0)
-
-        ################ 데이터베이스에서 해당 주문 삭제 #####################
-        '''
-        self.cursor.execute(
-            "DELETE FROM orders WHERE table_id = ? AND status = 'processing'",
-            (table_id,)
-        )
-        self.conn.commit()
-        '''
 
         # 대기 주문 정보에서 다음 주문 가져오기
         if self.cumulative_table.rowCount() > 0:
@@ -620,19 +646,9 @@ class KitchenMonitoring(QMainWindow):
                     if item:
                         self.order_table.setItem(row_count, col, QTableWidgetItem(item.text()))
 
-            ####################### 데이터베이스에서 대기 주문 삭제 #############################
-            '''
-            self.cursor.execute(
-                "DELETE FROM waiting_orders WHERE wait_number = ?",
-                (first_wait_number,)
-            )
-            self.conn.commit()
-            '''
-
             # 대기 주문에서 해당 주문 삭제
             for row in reversed(next_order_numbers):
                 self.cumulative_table.removeRow(row)
-
 
         # 주문 가격 총합 업데이트
         self.update_order_total_price()
