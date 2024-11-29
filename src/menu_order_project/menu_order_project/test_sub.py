@@ -178,7 +178,7 @@ class ControlPopup(QDialog):
             self.setWindowTitle(f"Control Robot - Table {self.table_id}")
         else:
             self.setWindowTitle(f"Control Robot - {self.table_id.capitalize()} Position")
-        self.setFixedSize(600, 600)  # 창 크기를 늘립니다.
+        self.setFixedSize(700, 700)  # 창 크기를 늘립니다.
 
         layout = QVBoxLayout()
 
@@ -228,12 +228,51 @@ class ControlPopup(QDialog):
         # 로봇 제어 버튼들을 추가합니다.
         self.waiting_button = QPushButton("Move to Waiting Position")
         self.waiting_button.clicked.connect(self.move_to_waiting)
+        ### 버튼 크기 및 색상 조정 ####
+        self.waiting_button.setFixedSize(200, 60)  # 버튼 크기 설정 (너비: 200px, 높이: 60px)
+        self.waiting_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;  /* 파란색 배경 */
+                color: white;               /* 흰색 글자 */
+                font-size: 16px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #0b7dda;  /* 호버 시 조금 더 진한 파란색 */
+            }
+        """)
 
         self.kitchen_button = QPushButton("Move to Kitchen Position")
         self.kitchen_button.clicked.connect(self.move_to_kitchen)
+        ### 버튼 크기 및 색상 조정 ###
+        self.kitchen_button.setFixedSize(200, 60)  # 버튼 크기 설정 (너비: 200px, 높이: 60px)
+        self.kitchen_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800;  /* 주황색 배경 */
+                color: white;               /* 흰색 글자 */
+                font-size: 16px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #e68900;  /* 호버 시 조금 더 진한 주황색 */
+            }
+        """)
 
         self.start_button = QPushButton("Start Robot")
         self.start_button.clicked.connect(self.start_robot)
+        #### 버튼 크기 및 색상 조정 #############
+        self.start_button.setFixedSize(200, 60)  # 버튼 크기 설정 (너비: 200px, 높이: 60px)
+        self.start_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;  /* 초록색 배경 */
+                color: white;               /* 흰색 글자 */
+                font-size: 16px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;  /* 호버 시 조금 더 진한 초록색 */
+            }
+        """)
 
         # 버튼들을 가로로 배치합니다.
         button_layout = QHBoxLayout()
@@ -428,7 +467,35 @@ class KitchenMonitoring(QMainWindow):
         self.accept_button = QPushButton("Accept")
         self.cancel_button = QPushButton("Cancel")
         self.accept_button.clicked.connect(self.handle_accept)  # 'Accept' 버튼 클릭 시 처리 함수 연결
+        ################## Accept button 크기 및 색상 조정 #########################################
+        self.accept_button.setFixedSize(250, 80)  # 버튼 크기 설정 (너비: 150px, 높이: 50px)
+        self.accept_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;  /* 초록색 배경 */
+                color: white;               /* 흰색 글자 */
+                font-size: 16px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;  /* 호버 시 조금 더 진한 초록색 */
+            }
+        """)
+        #########################################################################################
         self.cancel_button.clicked.connect(self.handle_cancel)  # 'Cancel' 버튼 클릭 시 처리 함수 연결
+        ############ Cancle의 크기 및 색상 조정 #####################################################
+        self.cancel_button.setFixedSize(250, 80)  # 버튼 크기 설정 (너비: 150px, 높이: 50px)
+        self.cancel_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;  /* 빨간색 배경 */
+                color: white;               /* 흰색 글자 */
+                font-size: 16px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #da190b;  /* 호버 시 조금 더 진한 빨간색 */
+            }
+        """)
+        #############################################################################################
         button_layout.addWidget(self.accept_button)
         button_layout.addWidget(self.cancel_button)
         layout.addLayout(button_layout)

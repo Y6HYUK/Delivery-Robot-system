@@ -46,9 +46,10 @@ class RobotController(Node):
             'table_9': {'x': 3.153391448984137, 'y': -1.0491125084255173, 'theta': -0.19493162164767266},
         }
 
-        # 로봇 상태를 퍼블리시하기 위한 퍼블리셔 생성
+        ############################ 로봇 상태를 퍼블리시하기 위한 퍼블리셔 생성 ####################
         self.status_publisher = self.create_publisher(String, 'robot_status', qos_profile)
         self.get_logger().info("Robot Status Publisher Initialized.")
+        ####################################################################################
 
     def command_callback(self, msg):
         """로봇 명령을 수신하여 처리하는 콜백 함수"""
