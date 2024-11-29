@@ -31,6 +31,9 @@ class Signaler(QObject):
     # 문자열을 전달하는 시그널 정의
     order_received = pyqtSignal(str)
 
+    # 로봇 상태를 전달하는 시그널 정의
+    robot_status_updated = pyqtSignal(str)
+
 # Signaler 인스턴스 생성
 signaler = Signaler()
 
@@ -77,6 +80,11 @@ class KitchenSubscriber(Node):
         #################### 'robot_command' 토픽에 퍼블리셔 생성 #########################################
         self.robot_command_publisher = self.create_publisher(String, 'robot_command', qos_profile)
         self.get_logger().info("Robot Command Publisher Initialized.")
+        ##############################################################################################
+
+        #################### 'robot_status' 토픽을 구독하는 서브스크라이버 생성 ##########################
+        self.robot_status_subscription = self.create_subscription(String, 'robot_status', self.robot_status_callback, qos_profile)
+        self.get_logger().info("Robot Status Subscriber Initialized.")
         ##############################################################################################
 
     def publish_robot_command(self, command_dict):  # 로봇 제어 명령과 관련하여 토픽 퍼브리시
@@ -143,6 +151,16 @@ class KitchenSubscriber(Node):
 
         # 시그널을 통해 GUI로 메시지를 전달
         signaler.order_received.emit(msg.data)
+    
+    ############# 로봇의 상태를 나타내기 위한 콜백함수 ##########################
+    def robot_status_callback(self, msg):
+        """로봇 상태 메시지를 받으면 호출되는 콜백 함수"""
+        status = msg.data
+        self.get_logger().info(f"Received robot status: {status}")
+
+        # 시그널을 통해 GUI로 상태 메시지를 전달
+        signaler.robot_status_updated.emit(status)
+    #######################################################################
 
 # 팝업 창 클래스 정의
 class ControlPopup(QDialog):
@@ -276,6 +294,7 @@ class KitchenMonitoring(QMainWindow):
 
         # 시그널과 슬롯 연결
         signaler.order_received.connect(self.update_order_details)
+        signaler.robot_status_updated.connect(self.update_robot_status)  # 로봇 상태 시그널 연결
 
         # 테이블별 주문 데이터 초기화 (테이블 1~9번)
         self.table_data = {i + 1: [] for i in range(9)}
@@ -300,9 +319,14 @@ class KitchenMonitoring(QMainWindow):
         self.total_price_label = QLabel("Total price: 0원", alignment=Qt.AlignRight)
         self.order_total_price_label = QLabel("Total price: 0원", alignment=Qt.AlignRight)
 
+        ################################### 로봇 상태를 표시할 레이블 생성 ##########################
+        self.robot_status_label = QLabel("로봇 상태: 대기 중", alignment=Qt.AlignLeft)
+        self.robot_status_label.setStyleSheet("font-size: 20px; font-weight: bold; color: red;")
+        #######################################################################################
+
         # 창 제목과 크기 설정
         self.setWindowTitle("Kitchen Display")
-        self.setGeometry(100, 100, 1120, 600)
+        self.setGeometry(100, 100, 1200, 600)
 
         # 메인 레이아웃 생성
         main_widget = QWidget(self)
@@ -319,6 +343,10 @@ class KitchenMonitoring(QMainWindow):
         self.statistics_button = QPushButton("Statistics")
         self.statistics_button.clicked.connect(self.show_statistics)
         self.left_layout.addWidget(self.statistics_button)
+
+        ##################### 로봇 상태 레이블 추가 ###########
+        self.left_layout.addWidget(self.robot_status_label)
+        ###################################################
 
         left_widget = QWidget()
         left_widget.setLayout(self.left_layout)
@@ -686,6 +714,13 @@ class KitchenMonitoring(QMainWindow):
                 self.control_popup.exec_()
             else:
                 print("Failed to extract table_id from button text.")
+
+    ############### 로봇 상태를 나타내는 메서드 ############################
+    def update_robot_status(self, status_message):
+        """로봇 상태 시그널을 받아 레이블을 업데이트하는 슬롯 함수"""
+        self.robot_status_label.setText(f"로봇 상태: {status_message}")
+        self.get_logger().info(f"Updated robot status label to: {status_message}")  # 추가된 로그
+    ##################################################################
 
     def move_robot_to_waiting_position(self):
         # 서빙 로봇을 대기 위치로 이동시키는 기능을 구현
