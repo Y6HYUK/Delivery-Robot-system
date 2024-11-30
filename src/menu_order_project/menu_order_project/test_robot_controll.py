@@ -128,6 +128,13 @@ class RobotController(Node):
                 status_msg.data = "대기 위치입니다."
             elif position_key == 'kitchen':
                 status_msg.data = "주방 위치입니다."
+            ############### 로봇이 해당 테이블에 도착했을 경우 로봇을 대기 위치로 복귀 시키기 위해 추가 ####################
+            elif "table_" in position_key:  # 테이블에 도착했을 경우
+                status_msg.data = (
+                    f"음식이 도착했습니다."
+                    "음식을 수령하셨다면 복귀 버튼을 눌러주세요."
+                )
+            ##################################################################################################
             else:
                 status_msg.data = f"{position_key} 위치입니다."
             self.status_publisher.publish(status_msg)
